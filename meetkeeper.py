@@ -51,6 +51,31 @@ def main():
     if expired > 0:
         print("%d expired polls have been removed." % expired)
 
+    if args.add != None:
+        day_components = args.add[0].split("-")
+        day = None
+        try:
+            day = datetime.date(int(day_components[0]), int(day_components[1]), int(day_components[2]))
+        except:
+            print("Could not parse date: %s. Please check your input and try again." % args.add[0])
+            sys.exit(1)
+
+        if day < datetime.date.today():
+            print("%s is already in the past. I won't add this to the database. :)" % args.add[0])
+            sys.exit(1)
+
+        add_entry(db, day, args.add[1])
+        print("Successfully added poll %s expiring on %s to the database." % (args.add[1], args.add[0]))
+    else:
+        print("Current polls in the database:")
+        for entry in entries:
+            print(entry[1], end="")
+
+
+def add_entry(db, day, link):
+    with open(db, "a") as f:
+        f.write("%04d-%02d-%02d %s\n"% (day.year, day.month, day.day, link))
+
 
 def parse_date_string(d_string):
     components = d_string.split("-")
