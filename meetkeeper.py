@@ -3,6 +3,7 @@
 import sys
 import argparse
 import os
+import datetime
 
 version = 0.1
 
@@ -42,6 +43,50 @@ def main():
 
     check_version(db)
 
+    parse_result = parse_db(db)
+
+    expired = parse_result[0]
+    entries = parse_result[1]
+
+    if expired > 0:
+        print("%d expired polls have been removed." % expired)
+
+
+def parse_date_string(d_string):
+    components = d_string.split("-")
+    day = datetime.date(int(components[0]), int(components[1]), int(components[2]))
+    return day
+
+
+def parse_db(db):
+    entries = []
+    expired = 0
+    with open(db, "r+") as f:
+        lines = f.readlines()
+
+        f.seek(0)
+
+        for line in lines:
+            if not (line.startswith("#") or line.startswith("version") or line.startswith("\n")):
+                components = line.split(" ")
+                day = None
+                try:
+                    day = parse_date_string(components[0])
+                except:
+                    print("Could not parse date: %s. Is the database corrupted?" % components[0])
+                    f.write("#%s %s <--- corrupt?\n" %(components[0], components[1].rstrip("\n")))
+                    continue
+                if day < datetime.date.today():
+                    expired += 1;
+                    f.write("#%s" % line)
+                else:
+                    entries.append((day, components[1]))
+                    f.write(line)
+            else:
+                f.write(line)
+        f.truncate()
+    return (expired, entries)
+                
 
 
 def check_version(db):
